@@ -66,8 +66,36 @@ John,Doe,john.doe@example.com,Developer,US,Tech Corp`
       companyName: 'Tech Corp',
       isValid: true,
       errors: [],
+      warnings: [],
       rowIndex: 2,
     })
+  })
+
+  it('should drop invalid country codes with a warning and keep the lead valid', () => {
+    const csv = `firstName,lastName,email,countryCode
+John,Doe,john@example.com,XXX
+Jane,Smith,jane@example.com,12`
+
+    const result = parseCsv(csv)
+
+    expect(result).toHaveLength(2)
+    result.forEach((lead) => {
+      expect(lead.isValid).toBe(true)
+      expect(lead.countryCode).toBeUndefined()
+      expect(lead.warnings).toHaveLength(1)
+    })
+    expect(result[0].warnings[0]).toContain('"XXX"')
+    expect(result[1].warnings[0]).toContain('"12"')
+  })
+
+  it('should accept lowercase country codes and normalize them to uppercase', () => {
+    const csv = `firstName,lastName,email,countryCode
+John,Doe,john@example.com,es`
+
+    const result = parseCsv(csv)
+
+    expect(result[0].countryCode).toBe('ES')
+    expect(result[0].warnings).toEqual([])
   })
 
   it('should handle missing required fields and mark as invalid', () => {
