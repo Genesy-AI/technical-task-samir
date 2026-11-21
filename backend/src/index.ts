@@ -277,34 +277,52 @@ app.post('/leads/verify-emails', async (req: Request, res: Response) => {
     const client = new Client({ connection, namespace: 'default' })
 
     let verifiedCount = 0
-    const results: Array<{ leadId: number; emailVerified: boolean }> = []
+    const results: Array<{ leadId: number; emailVerified: boolean | null }> = []
     const errors: Array<{ leadId: number; leadName: string; error: string }> = []
 
-    for (const lead of leads) {
-      try {
-        const isVerified = await client.workflow.execute(verifyEmailWorkflow, {
-          taskQueue: 'myQueue',
-          workflowId: `verify-email-${lead.id}-${Date.now()}`,
-          args: [lead.email],
-        })
+    try {
+      // Run all workflows concurrently so one slow lead doesn't block the rest
+      const outcomes = await Promise.allSettled(
+        leads.map(async (lead) => {
+          const result = await client.workflow.execute(verifyEmailWorkflow, {
+            taskQueue: 'myQueue',
+            workflowId: `verify-email-${lead.id}-${Date.now()}`,
+            args: [lead.email],
+          })
 
-        await prisma.lead.update({
-          where: { id: lead.id },
-          data: { emailVerified: Boolean(isVerified) },
-        })
+          // 'unknown' is stored as null so it isn't mistaken for an invalid email
+          const emailVerified = result === 'unknown' ? null : result === 'valid'
 
-        results.push({ leadId: lead.id, emailVerified: isVerified })
-        verifiedCount += 1
-      } catch (error) {
-        errors.push({
-          leadId: lead.id,
-          leadName: `${lead.firstName} ${lead.lastName}`.trim(),
-          error: error instanceof Error ? error.message : 'Unknown error',
+          await prisma.lead.update({
+            where: { id: lead.id },
+            data: { emailVerified },
+          })
+
+          return { result, emailVerified }
         })
-      }
+      )
+
+      outcomes.forEach((outcome, index) => {
+        const lead = leads[index]
+        const leadName = `${lead.firstName} ${lead.lastName}`.trim()
+
+        if (outcome.status === 'rejected') {
+          const { reason } = outcome
+          errors.push({ leadId: lead.id, leadName, error: reason instanceof Error ? reason.message : 'Unknown error' })
+          return
+        }
+
+        results.push({ leadId: lead.id, emailVerified: outcome.value.emailVerified })
+
+        if (outcome.value.result === 'unknown') {
+          errors.push({ leadId: lead.id, leadName, error: 'Email verification could not be completed' })
+        } else {
+          verifiedCount += 1
+        }
+      })
+    } finally {
+      await connection.close()
     }
-
-    await connection.close()
 
     res.json({ success: true, verifiedCount, results, errors })
   } catch (error) {
