@@ -5,6 +5,9 @@ import { api } from '../api'
 import { MessageTemplateModal } from './MessageTemplateModal'
 import { CsvImportModal } from './CsvImportModal'
 
+// Shared id so the loading toast is replaced in place by the outcome toast
+const VERIFY_TOAST_ID = 'verify-emails'
+
 export const LeadsList: FC = () => {
   const [selectedLeads, setSelectedLeads] = useState<number[]>([])
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false)
@@ -37,17 +40,26 @@ export const LeadsList: FC = () => {
 
   const verifyEmailsMutation = useMutation({
     mutationFn: async (ids: number[]) => api.leads.verifyEmails({ leadIds: ids }),
+    // Shown until the request settles
+    onMutate: (ids) => {
+      toast.loading(`Verifying ${ids.length} email${ids.length === 1 ? '' : 's'}…`, { id: VERIFY_TOAST_ID })
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['leads', 'getMany'] })
       setIsEnrichDropdownOpen(false)
       toast.success(
         data.verifiedCount === 1
           ? `Verified ${data.verifiedCount} email`
-          : `Verified ${data.verifiedCount} emails`
+          : `Verified ${data.verifiedCount} emails`,
+        { id: VERIFY_TOAST_ID }
       )
+      // Surface leads whose verification timed out or failed
+      if (data.errors.length > 0) {
+        toast.error(`Could not verify ${data.errors.length} email${data.errors.length === 1 ? '' : 's'}`)
+      }
     },
     onError: () => {
-      toast.error('Failed to verify emails. Please try again.')
+      toast.error('Failed to verify emails. Please try again.', { id: VERIFY_TOAST_ID })
     }
   })
 
@@ -149,7 +161,8 @@ export const LeadsList: FC = () => {
                     </button>
                     <button
                       onClick={() => verifyEmailsMutation.mutate(selectedLeads)}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      disabled={verifyEmailsMutation.isPending}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       <div className="flex items-center">
                         <svg className="mr-3 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
