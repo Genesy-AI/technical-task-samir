@@ -19,4 +19,9 @@ model lead {
   companyName String?
   message     String?
   emailVerified Boolean?
+  phoneNumber String?
+  yearsAtCompany Int?
+  linkedinUrl String?
+  // PENDING | FOUND | NOT_FOUND | FAILED; null when enrichment never ran
+  phoneEnrichmentStatus String?
 }

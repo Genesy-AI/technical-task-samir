@@ -7,6 +7,9 @@ export interface CsvLead {
   jobTitle?: string
   countryCode?: string
   companyName?: string
+  phoneNumber?: string
+  yearsAtCompany?: number
+  linkedinUrl?: string
   isValid: boolean
   errors: string[]
   rowIndex: number
@@ -49,6 +52,8 @@ export const parseCsv = (content: string): CsvLead[] => {
     if (Object.values(row).every((value) => !value)) return
 
     const lead: Partial<CsvLead> = { rowIndex: index + 2 }
+    // Kept raw so it can be validated before converting to a number
+    let yearsAtCompanyRaw = ''
 
     Object.entries(row).forEach(([header, value]) => {
       const normalizedHeader = header.toLowerCase().replace(/[^a-z]/g, '')
@@ -73,10 +78,28 @@ export const parseCsv = (content: string): CsvLead[] => {
         case 'companyname':
           lead.companyName = trimmedValue || undefined
           break
+        case 'phonenumber':
+          lead.phoneNumber = trimmedValue || undefined
+          break
+        // 'yearsInRole' is accepted as an alias used by existing CSV exports
+        case 'yearsatcompany':
+        case 'yearsinrole':
+          yearsAtCompanyRaw = trimmedValue
+          break
+        case 'linkedinurl':
+          lead.linkedinUrl = trimmedValue || undefined
+          break
       }
     })
 
     const errors: string[] = []
+    if (yearsAtCompanyRaw) {
+      if (/^\d+$/.test(yearsAtCompanyRaw)) {
+        lead.yearsAtCompany = Number(yearsAtCompanyRaw)
+      } else {
+        errors.push('Years at company must be a whole number')
+      }
+    }
     if (!lead.firstName?.trim()) {
       errors.push('First name is required')
     }
