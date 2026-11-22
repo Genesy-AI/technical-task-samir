@@ -5,6 +5,9 @@ export interface Lead {
   jobTitle?: string | null
   companyName?: string | null
   countryCode?: string | null
+  phoneNumber?: string | null
+  yearsAtCompany?: number | null
+  linkedinUrl?: string | null
 }
 
 export function generateMessageFromTemplate(template: string, lead: Lead): string {
@@ -17,6 +20,9 @@ export function generateMessageFromTemplate(template: string, lead: Lead): strin
     jobTitle: lead.jobTitle,
     companyName: lead.companyName,
     countryCode: lead.countryCode,
+    phoneNumber: lead.phoneNumber,
+    yearsAtCompany: lead.yearsAtCompany,
+    linkedinUrl: lead.linkedinUrl,
   }
 
   const templateVariables = template.match(/\{(\w+)\}/g) || []
@@ -31,7 +37,8 @@ export function generateMessageFromTemplate(template: string, lead: Lead): strin
         throw new Error(`Missing required field: ${fieldName}`)
       }
 
-      message = message.replace(new RegExp(`\\{${fieldName}\\}`, 'g'), fieldValue)
+      // Numeric fields (e.g. yearsAtCompany) are stringified; 0 is a valid value
+      message = message.replace(new RegExp(`\\{${fieldName}\\}`, 'g'), String(fieldValue))
     } else {
       throw new Error(`Unknown field in template: ${fieldName}`)
     }
