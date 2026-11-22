@@ -70,6 +70,42 @@ John,Doe,john.doe@example.com,Developer,US,Tech Corp`
     })
   })
 
+  it('should parse phone number, years at company and LinkedIn URL', () => {
+    const csv = `firstName,lastName,email,phoneNumber,yearsAtCompany,linkedinUrl
+John,Doe,john@example.com,+1-555-0100,4,https://www.linkedin.com/in/johndoe`
+
+    const result = parseCsv(csv)
+
+    expect(result[0].phoneNumber).toBe('+1-555-0100')
+    expect(result[0].yearsAtCompany).toBe(4)
+    expect(result[0].linkedinUrl).toBe('https://www.linkedin.com/in/johndoe')
+    expect(result[0].isValid).toBe(true)
+  })
+
+  it('should accept yearsInRole as an alias for years at company', () => {
+    const csv = `firstName,lastName,email,yearsInRole
+John,Doe,john@example.com,0`
+
+    const result = parseCsv(csv)
+
+    expect(result[0].yearsAtCompany).toBe(0)
+    expect(result[0].isValid).toBe(true)
+  })
+
+  it('should reject non-numeric years at company', () => {
+    const csv = `firstName,lastName,email,yearsAtCompany
+John,Doe,john@example.com,ten
+Jane,Smith,jane@example.com,2.5`
+
+    const result = parseCsv(csv)
+
+    result.forEach((lead) => {
+      expect(lead.isValid).toBe(false)
+      expect(lead.errors).toContain('Years at company must be a whole number')
+      expect(lead.yearsAtCompany).toBeUndefined()
+    })
+  })
+
   it('should handle missing required fields and mark as invalid', () => {
     const csv = `firstName,lastName,email
 ,Smith,john@example.com

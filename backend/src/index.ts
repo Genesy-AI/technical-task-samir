@@ -229,6 +229,11 @@ app.post('/leads/bulk', async (req: Request, res: Response) => {
             jobTitle: lead.jobTitle ? lead.jobTitle.trim() : null,
             countryCode: lead.countryCode ? lead.countryCode.trim() : null,
             companyName: lead.companyName ? lead.companyName.trim() : null,
+            phoneNumber: lead.phoneNumber ? lead.phoneNumber.trim() : null,
+            // Ignore anything that isn't a non-negative integer instead of failing the insert
+            yearsAtCompany:
+              Number.isInteger(lead.yearsAtCompany) && lead.yearsAtCompany >= 0 ? lead.yearsAtCompany : null,
+            linkedinUrl: lead.linkedinUrl ? lead.linkedinUrl.trim() : null,
           },
         })
         importedCount++

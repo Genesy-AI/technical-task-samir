@@ -106,7 +106,18 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
     }
   }, [isOpen, handleClose])
 
-  const availableFields = ['firstName', 'lastName', 'email', 'jobTitle', 'companyName', 'countryCode']
+  // Must match the fields supported by the backend messageGenerator
+  const availableFields = [
+    { key: 'firstName', label: 'First name' },
+    { key: 'lastName', label: 'Last name' },
+    { key: 'email', label: 'Email' },
+    { key: 'jobTitle', label: 'Job title' },
+    { key: 'companyName', label: 'Company' },
+    { key: 'countryCode', label: 'Country code' },
+    { key: 'phoneNumber', label: 'Phone number' },
+    { key: 'yearsAtCompany', label: 'Years at company' },
+    { key: 'linkedinUrl', label: 'LinkedIn URL' },
+  ]
 
   const insertField = (field: string) => {
     if (textareaRef.current) {
@@ -156,19 +167,22 @@ export const MessageTemplateModal: FC<MessageTemplateModalProps> = ({
                 Message Template
               </label>
               <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-sm text-gray-600">Insert field:</span>
+                {/* A dropdown scales with a growing field list better than inline chips */}
+                <select
+                  aria-label="Insert field"
+                  value=""
+                  onChange={(e) => e.target.value && insertField(e.target.value)}
+                  className="px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="" disabled>
+                    Insert field…
+                  </option>
                   {availableFields.map((field) => (
-                    <button
-                      key={field}
-                      type="button"
-                      onClick={() => insertField(field)}
-                      className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
-                    >
-                      {`{${field}}`}
-                    </button>
+                    <option key={field.key} value={field.key}>
+                      {`${field.label} {${field.key}}`}
+                    </option>
                   ))}
-                </div>
+                </select>
                 <textarea
                   ref={textareaRef}
                   id="message-template"

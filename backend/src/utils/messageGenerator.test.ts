@@ -9,6 +9,9 @@ describe('generateMessageFromTemplate', () => {
     jobTitle: 'Software Engineer',
     companyName: 'Tech Corp',
     countryCode: 'US',
+    phoneNumber: '+1-555-0100',
+    yearsAtCompany: 4,
+    linkedinUrl: 'https://www.linkedin.com/in/johndoe',
   }
 
   const partialLead: Lead = {
@@ -50,6 +53,17 @@ describe('generateMessageFromTemplate', () => {
       expect(result).toBe(
         'Name: John Doe, Email: john.doe@example.com, Job: Software Engineer at Tech Corp, Country: US'
       )
+    })
+
+    it('should replace phone, years at company and LinkedIn fields', () => {
+      const template = 'Call {phoneNumber}, {yearsAtCompany} years in, profile: {linkedinUrl}'
+      const result = generateMessageFromTemplate(template, fullLead)
+      expect(result).toBe('Call +1-555-0100, 4 years in, profile: https://www.linkedin.com/in/johndoe')
+    })
+
+    it('should treat 0 years at company as a valid value', () => {
+      const result = generateMessageFromTemplate('{yearsAtCompany} years', { firstName: 'New', yearsAtCompany: 0 })
+      expect(result).toBe('0 years')
     })
 
     it('should handle template with no field placeholders', () => {
