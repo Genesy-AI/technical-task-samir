@@ -15,4 +15,5 @@ export type LeadsGetManyOutput = {
   phoneNumber: string | null
   yearsAtCompany: number | null
   linkedinUrl: string | null
+  phoneEnrichmentStatus: 'PENDING' | 'FOUND' | 'NOT_FOUND' | 'FAILED' | null
 }[]

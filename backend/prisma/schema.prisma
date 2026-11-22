@@ -22,4 +22,6 @@ model lead {
   phoneNumber String?
   yearsAtCompany Int?
   linkedinUrl String?
+  // PENDING | FOUND | NOT_FOUND | FAILED; null when enrichment never ran
+  phoneEnrichmentStatus String?
 }
